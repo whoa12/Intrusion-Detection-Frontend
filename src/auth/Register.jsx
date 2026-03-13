@@ -21,20 +21,28 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    setLoading(true);   // show loading screen
+    setLoading(true);
 
     try {
       const response = await adminService.register(formData);
 
+      // 1. Save data to localStorage
+      // Ensure these keys match exactly what App.js is looking for
       localStorage.setItem('token', response.data.jwt);
       localStorage.setItem('role', response.data.role);
       localStorage.setItem('email', response.data.email);
 
-      window.location.href = "/dashboard";
+      // 2. Crucial Step: Wait a micro-moment for Storage to commit
+      // Then use window.location.assign to force a clean transition 
+      // to the dashboard while keeping the new storage state.
+      setTimeout(() => {
+        window.location.assign("/dashboard");
+      }, 100);
+
     } catch (err) {
       console.error("Registration error:", err);
-      alert(err.response?.data?.messageGenerated || "Registration failed. User might already exist.");
+      const errorMsg = err.response?.data?.messageGenerated || "Registration failed.";
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -42,7 +50,6 @@ function Register() {
 
   return (
     <div className="auth-container">
-
       {loading && (
         <div className="loading-overlay">
           <div className="spinner"></div>
@@ -56,7 +63,6 @@ function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-
           <div className="form-group">
             <input
               type="text"
@@ -91,7 +97,13 @@ function Register() {
           </div>
 
           <div className="form-group">
-            <select name="role" value={formData.role} onChange={handleChange} required>
+            <select 
+              name="role" 
+              value={formData.role} 
+              onChange={handleChange} 
+              required
+              className="role-select"
+            >
               <option value="">Select Role</option>
               <option value="ADMIN">Administrator</option>
               <option value="USER">User</option>
@@ -101,7 +113,6 @@ function Register() {
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? "Creating..." : "Create Account"}
           </button>
-
         </form>
 
         <div className="auth-footer">
