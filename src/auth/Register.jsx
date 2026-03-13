@@ -1,67 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Register from './auth/Register';
-import Login from './auth/Login';
-import AttackDashboard from './pages/AttackDashboard';
-import Navbar from './navbar/Navbar';
-import BlockedIps from './pages/BlockedIps';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { adminService } from '../services/api';
+import './Auth.css';
 
-function App() {
-  // 1. Initialize state by checking localStorage immediately
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+function Register() {
+  const navigate = useNavigate();
 
-  // 2. Sync state when the app mounts or storage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      setIsAuthenticated(!!token);
-    };
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: ''
+  });
 
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
-  }, []);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setLoading(true);   // show loading screen
+
+    try {
+      const response = await adminService.register(formData);
+
+      localStorage.setItem('token', response.data.jwt);
+      localStorage.setItem('role', response.data.role);
+      localStorage.setItem('email', response.data.email);
+
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert(err.response?.data?.messageGenerated || "Registration failed. User might already exist.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-[#0f172a] text-white">
-        {/* Navbar only visible when authenticated */}
-        {isAuthenticated && <Navbar setIsAuthenticated={setIsAuthenticated} />} 
+    <div className="auth-container">
 
-        <Routes>
-          {/* Public Routes */}
-          <Route 
-            path="/login" 
-            element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} 
-          />
-          
-          <Route 
-            path="/register" 
-            element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />} 
-          />
+      {loading && (
+        <div className="loading-overlay">
+          <div className="spinner"></div>
+          <p>Creating account...</p>
+        </div>
+      )}
 
-          {/* Protected Routes */}
-          <Route 
-            path="/dashboard" 
-            element={isAuthenticated ? <AttackDashboard /> : <Navigate to="/login" replace />} 
-          />
+      <div className="auth-card">
+        <div className="brand">
+          <h1>SECURE<span>FLOW</span></h1>
+        </div>
 
-          <Route 
-            path="/blocked-ips" 
-            element={isAuthenticated ? <BlockedIps /> : <Navigate to="/login" replace />} 
-          />
+        <form onSubmit={handleSubmit} className="auth-form">
 
-          {/* Root Handling */}
-          <Route 
-            path="/" 
-            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
-          />
+          <div className="form-group">
+            <input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          {/* 404 Redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          <div className="form-group">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <select name="role" value={formData.role} onChange={handleChange} required>
+              <option value="">Select Role</option>
+              <option value="ADMIN">Administrator</option>
+              <option value="USER">User</option>
+            </select>
+          </div>
+
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? "Creating..." : "Create Account"}
+          </button>
+
+        </form>
+
+        <div className="auth-footer">
+          <p>
+            Already have an account?
+            <Link to="/login" className="auth-link"> Sign In</Link>
+          </p>
+        </div>
       </div>
-    </BrowserRouter>
+    </div>
   );
 }
 
-export default App;
+export default Register;
