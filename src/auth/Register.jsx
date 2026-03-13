@@ -7,20 +7,16 @@ import Navbar from './navbar/Navbar';
 import BlockedIps from './pages/BlockedIps';
 
 function App() {
-  // Initialize state by checking localStorage immediately
+  // 1. Initialize state by checking localStorage immediately
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
 
-  // Listen for changes to ensure the UI stays in sync with storage
+  // 2. Sync state when the app mounts or storage changes
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       setIsAuthenticated(!!token);
     };
 
-    // Check once on mount
-    checkAuth();
-
-    // Optional: Listen for storage changes (helpful if user logs out in another tab)
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, []);
@@ -32,7 +28,7 @@ function App() {
         {isAuthenticated && <Navbar setIsAuthenticated={setIsAuthenticated} />} 
 
         <Routes>
-          {/* Public Routes: Redirect to dashboard if already logged in */}
+          {/* Public Routes */}
           <Route 
             path="/login" 
             element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} 
@@ -43,7 +39,7 @@ function App() {
             element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />} 
           />
 
-          {/* Protected Routes: Redirect to login if not authenticated */}
+          {/* Protected Routes */}
           <Route 
             path="/dashboard" 
             element={isAuthenticated ? <AttackDashboard /> : <Navigate to="/login" replace />} 
@@ -60,7 +56,7 @@ function App() {
             element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
           />
 
-          {/* Catch-all/404 handling */}
+          {/* 404 Redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
