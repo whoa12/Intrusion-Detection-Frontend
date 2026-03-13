@@ -31,7 +31,7 @@ function Register() {
       localStorage.setItem('role', response.data.role);
       localStorage.setItem('email', response.data.email);
 
-      navigate('/dashboard');
+     window.location.href = "/dashboard";
 
     } catch (err) {
       console.error("Registration error:", err);
